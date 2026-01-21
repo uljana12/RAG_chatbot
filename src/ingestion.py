@@ -19,8 +19,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configuration
-CHROMA_PERSIST_DIRECTORY = "./chroma_db"
+# Configuration - use absolute path to avoid issues with working directory
+_BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CHROMA_PERSIST_DIRECTORY = os.path.join(_BASE_DIR, "chroma_db")
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
 
@@ -157,9 +158,9 @@ def clear_vector_store():
     import shutil
     if os.path.exists(CHROMA_PERSIST_DIRECTORY):
         shutil.rmtree(CHROMA_PERSIST_DIRECTORY)
-        print("Vector store cleared.")
-    else:
-        print("No vector store to clear.")
+    # Always recreate the directory
+    os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
+    print("Vector store cleared.")
 
 
 if __name__ == "__main__":
