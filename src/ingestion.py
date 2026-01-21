@@ -90,25 +90,55 @@ def process_documents(documents: List[Document]) -> List[Document]:
     return text_splitter.split_documents(documents)
 
 
+def _get_chroma_client():
+    """Get ChromaDB client with settings to avoid SQLite locking."""
+    import chromadb
+    from chromadb.config import Settings
+    
+    # Ensure directory exists
+    os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
+    
+    return chromadb.PersistentClient(
+        path=CHROMA_PERSIST_DIRECTORY,
+        settings=Settings(
+            anonymized_telemetry=False,
+            is_persistent=True
+        )
+    )
+
+
 def create_vector_store(documents: List[Document]) -> Chroma:
     """Create a new vector store from documents."""
     embeddings = get_embeddings()
+    client = _get_chroma_client()
+    
     vector_store = Chroma.from_documents(
         documents=documents,
         embedding=embeddings,
-        persist_directory=CHROMA_PERSIST_DIRECTORY
+        client=client,
+        collection_name="rag_documents"
     )
     return vector_store
 
 
 def load_vector_store() -> Optional[Chroma]:
     """Load existing vector store if it exists."""
-    if os.path.exists(CHROMA_PERSIST_DIRECTORY):
+    chroma_db_file = os.path.join(CHROMA_PERSIST_DIRECTORY, "chroma.sqlite3")
+    if os.path.exists(chroma_db_file):
         embeddings = get_embeddings()
-        return Chroma(
-            persist_directory=CHROMA_PERSIST_DIRECTORY,
-            embedding_function=embeddings
-        )
+        client = _get_chroma_client()
+        
+        # Check if collection exists
+        try:
+            collections = client.list_collections()
+            if any(c.name == "rag_documents" for c in collections):
+                return Chroma(
+                    client=client,
+                    collection_name="rag_documents",
+                    embedding_function=embeddings
+                )
+        except:
+            pass
     return None
 
 
@@ -116,16 +146,17 @@ def add_documents_to_store(documents: List[Document], vector_store: Optional[Chr
     """Add documents to existing vector store or create new one."""
     processed_docs = process_documents(documents)
     
-    if vector_store is None:
-        vector_store = load_vector_store()
+    embeddings = get_embeddings()
+    client = _get_chroma_client()
     
-    if vector_store is None:
-        # Create new vector store
-        vector_store = create_vector_store(processed_docs)
-    else:
-        # Add to existing store
-        vector_store.add_documents(processed_docs)
+    # Always use the same client instance
+    vector_store = Chroma(
+        client=client,
+        collection_name="rag_documents",
+        embedding_function=embeddings
+    )
     
+    vector_store.add_documents(processed_docs)
     return vector_store
 
 
@@ -154,13 +185,44 @@ def ingest_text(text: str, source_name: str = "user_input") -> Chroma:
 
 
 def clear_vector_store():
-    """Delete the vector store."""
+    """Delete the vector store contents using ChromaDB's reset feature."""
     import shutil
+    import time
+    
+    try:
+        # First, try to delete the collection via ChromaDB API
+        client = _get_chroma_client()
+        try:
+            client.delete_collection(COLLECTION_NAME)
+            print(f"Collection '{COLLECTION_NAME}' deleted via API.")
+        except Exception as e:
+            print(f"Collection delete via API failed (may not exist): {e}")
+    except Exception as e:
+        print(f"Could not get client for cleanup: {e}")
+    
+    # Give SQLite time to release locks
+    time.sleep(0.5)
+    
+    # Now completely remove and recreate the directory
     if os.path.exists(CHROMA_PERSIST_DIRECTORY):
-        shutil.rmtree(CHROMA_PERSIST_DIRECTORY)
-    # Always recreate the directory
+        try:
+            shutil.rmtree(CHROMA_PERSIST_DIRECTORY)
+            print(f"Removed directory: {CHROMA_PERSIST_DIRECTORY}")
+        except Exception as e:
+            print(f"Error removing directory: {e}")
+    
+    # Wait a moment for filesystem
+    time.sleep(0.3)
+    
+    # Recreate clean directory
     os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
-    print("Vector store cleared.")
+    
+    # Add anti-indexing files
+    for f in ['.metadata_never_index', '.noindex']:
+        filepath = os.path.join(CHROMA_PERSIST_DIRECTORY, f)
+        open(filepath, 'w').close()
+    
+    print("Vector store cleared and reset.")
 
 
 if __name__ == "__main__":

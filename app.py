@@ -125,11 +125,13 @@ def render_sidebar():
         
         with col2:
             if st.button("🗑️ Clear KB", use_container_width=True):
-                clear_vector_store()
-                st.session_state.vector_store_ready = False
+                # Reset chatbot first to release any connections
                 st.session_state.chatbot = None
+                st.session_state.vector_store_ready = False
                 st.session_state.messages = []
-                st.success("Cleared!")
+                # Now clear the vector store
+                clear_vector_store()
+                st.success("Knowledge Base cleared!")
                 st.rerun()
         
         if st.button("🧹 Clear Chat History", use_container_width=True):
