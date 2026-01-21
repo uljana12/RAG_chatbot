@@ -1,6 +1,6 @@
 # Enterprise RAG Platform
 
-A production-ready **Retrieval-Augmented Generation (RAG)** platform built with LangChain, demonstrating enterprise AI architecture patterns for the banking and finance sector.
+A production-ready **Retrieval-Augmented Generation (RAG)** platform built with LangChain, demonstrating enterprise AI architecture patterns.
 
 > **Demo Use Case**: Copenhagen IT Job Search Assistant  
 > **Applicable to**: Customer service automation, internal knowledge bases, document Q&A
