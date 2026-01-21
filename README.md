@@ -11,7 +11,7 @@ A production-ready **Retrieval-Augmented Generation (RAG)** platform built with 
 |---------|------------|-------------|
 | **RAG Pipeline** | LangChain | Document ingestion, chunking, retrieval |
 | **Vector Store** | ChromaDB | Persistent similarity search |
-| **LLM Backend** | Ollama (local) / OpenAI | Flexible deployment options |
+| **LLM Backend** | Ollama (Llama 3.2) | Free local LLM, no API key needed |
 | **Web UI** | Streamlit | Interactive chat interface |
 | **REST API** | FastAPI | Production API with OpenAPI docs |
 | **Containerization** | Docker Compose | One-command deployment |
@@ -78,6 +78,8 @@ cp .env.example .env
 ```
 
 Default configuration uses Ollama (free, local). No API key needed!
+
+> **macOS Note**: If you encounter ChromaDB "readonly database" errors, ensure the `chroma_db/` folder is excluded from Spotlight indexing by adding a `.noindex` file inside it.
 
 ### 5. Run the Application
 

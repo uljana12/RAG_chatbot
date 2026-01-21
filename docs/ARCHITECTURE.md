@@ -77,10 +77,10 @@ This document provides comprehensive architecture documentation using the C4 mod
 │  │                    ▼                               ▼                       │   │
 │  │      ┌─────────────────────┐         ┌─────────────────────┐              │   │
 │  │      │    Vector Store     │         │    LLM Service      │              │   │
-│  │      │    [ChromaDB]       │         │    [Ollama/OpenAI]  │              │   │
+│  │      │    [ChromaDB]       │         │    [Ollama]         │              │   │
 │  │      │                     │         │                     │              │   │
 │  │      │  Persistent storage │         │  Local: Llama 3.2   │              │   │
-│  │      │  for embeddings     │         │  Cloud: GPT-3.5     │              │   │
+│  │      │  for embeddings     │         │  Free, no API key   │              │   │
 │  │      └─────────────────────┘         └─────────────────────┘              │   │
 │  │                                                                           │   │
 │  └───────────────────────────────────────────────────────────────────────────┘   │
@@ -94,7 +94,7 @@ This document provides comprehensive architecture documentation using the C4 mod
 | REST API | FastAPI | Programmatic access | 8000 |
 | RAG Engine | Python/LangChain | Core AI logic | - |
 | Vector Store | ChromaDB | Embedding storage | - |
-| LLM Service | Ollama/OpenAI | Text generation | 11434 |
+| LLM Service | Ollama (Llama 3.2) | Text generation | 11434 |
 
 ---
 
