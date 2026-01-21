@@ -178,9 +178,6 @@ curl http://localhost:8000/health
 # Load job data
 curl -X POST http://localhost:8000/ingest/jobs
 
-# Load banking FAQ (Nykredit demo)
-curl -X POST http://localhost:8000/ingest/banking-faq
-
 # Chat
 curl -X POST http://localhost:8000/chat \
   -H "Content-Type: application/json" \
@@ -247,28 +244,12 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for:
 - Security considerations
 - Technology decisions
 
-## 🏦 Banking/Finance Use Case
-
-This platform includes a banking FAQ demo (`/ingest/banking-faq`) showcasing:
-- Mortgage product information
-- Investment guidance
-- Customer service automation
-- Compliance considerations
-
-Applicable to Nykredit use cases:
-- Internal knowledge assistant
-- Customer service chatbot
-- Document Q&A system
-- Process automation
-
 ## 🔧 Configuration
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `OLLAMA_MODEL` | llama3.2 | Local LLM model |
 | `OLLAMA_BASE_URL` | http://localhost:11434 | Ollama service URL |
-| `OPENAI_API_KEY` | - | OpenAI API key (optional) |
-| `OPENAI_MODEL` | gpt-3.5-turbo | OpenAI model |
 
 ## 🤝 Contributing
 
