@@ -79,7 +79,7 @@ This document provides comprehensive architecture documentation using the C4 mod
 │  │      │    Vector Store     │         │    LLM Service      │              │   │
 │  │      │    [ChromaDB]       │         │    [Ollama]         │              │   │
 │  │      │                     │         │                     │              │   │
-│  │      │  Persistent storage │         │  Local: Llama 3.2   │              │   │
+│  │      │  In-memory storage  │         │  Local: Llama 3.2   │              │   │
 │  │      │  for embeddings     │         │  Free, no API key   │              │   │
 │  │      └─────────────────────┘         └─────────────────────┘              │   │
 │  │                                                                           │   │
@@ -114,8 +114,8 @@ This document provides comprehensive architecture documentation using the C4 mod
 │   │  │  Document   │──▶│    Text     │──▶│  Embedding  │──▶│   Vector    │   │    │
 │   │  │  Loaders    │   │  Splitter   │   │  Generator  │   │   Store     │   │    │
 │   │  │             │   │             │   │             │   │             │   │    │
-│   │  │ • PDF       │   │ Recursive   │   │ Ollama or   │   │ ChromaDB    │   │    │
-│   │  │ • Text      │   │ Char Split  │   │ OpenAI      │   │ Persistent  │   │    │
+│   │  │ • PDF       │   │ Recursive   │   │ Ollama      │   │ ChromaDB    │   │    │
+│   │  │ • Text      │   │ Char Split  │   │ Embeddings  │   │ In-memory   │   │    │
 │   │  │ • Web       │   │ 1000/200    │   │             │   │             │   │    │
 │   │  │ • Jobs API  │   │             │   │             │   │             │   │    │
 │   │  └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘   │    │

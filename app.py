@@ -146,29 +146,6 @@ def render_job_loader():
     st.markdown("#### 🇩🇰 Copenhagen IT Jobs")
     st.markdown("Load current IT & Software job listings from Copenhagen.")
     
-    # Show what will be loaded
-    with st.expander("ℹ️ What's included?"):
-        st.markdown("""
-        **Companies featured:**
-        - Novo Nordisk, Maersk, Spotify
-        - LEGO, Microsoft, Danske Bank
-        - Pleo, Unity, Trustpilot, and more
-        
-        **Job types:**
-        - Software Engineers
-        - Full Stack Developers
-        - Data Engineers
-        - DevOps/SRE
-        - ML Engineers
-        - IT Security
-        
-        **Information provided:**
-        - Job descriptions
-        - Salary ranges (DKK)
-        - Required skills
-        - Company benefits
-        """)
-    
     if st.button("🔄 Load Copenhagen IT Jobs", use_container_width=True):
         with st.spinner("Fetching job listings..."):
             try:

@@ -163,13 +163,18 @@ class RAGChatbot:
         result = {"answer": answer}
         
         if include_sources:
-            result["sources"] = [
-                {
-                    "content": doc.page_content[:200] + "...",
-                    "source": doc.metadata.get("source", "Unknown")
-                }
-                for doc in enriched_inputs["source_documents"]
-            ]
+            # Deduplicate sources by content
+            seen_content = set()
+            unique_sources = []
+            for doc in enriched_inputs["source_documents"]:
+                content_preview = doc.page_content[:200]
+                if content_preview not in seen_content:
+                    seen_content.add(content_preview)
+                    unique_sources.append({
+                        "content": content_preview + "...",
+                        "source": doc.metadata.get("source", "Unknown")
+                    })
+            result["sources"] = unique_sources
         
         return result
     

@@ -22,6 +22,7 @@ load_dotenv()
 # Configuration - use absolute path to avoid issues with working directory
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHROMA_PERSIST_DIRECTORY = os.path.join(_BASE_DIR, "chroma_db")
+COLLECTION_NAME = "rag_documents"
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 200
 
@@ -90,74 +91,82 @@ def process_documents(documents: List[Document]) -> List[Document]:
     return text_splitter.split_documents(documents)
 
 
-def _get_chroma_client():
-    """Get ChromaDB client with settings to avoid SQLite locking."""
-    import chromadb
-    from chromadb.config import Settings
-    
-    # Ensure directory exists
-    os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
-    
-    return chromadb.PersistentClient(
-        path=CHROMA_PERSIST_DIRECTORY,
-        settings=Settings(
-            anonymized_telemetry=False,
-            is_persistent=True
-        )
-    )
+# Global in-memory vector store (no SQLite = no locking issues)
+_vector_store = None
+
+def _get_vector_store() -> Optional[Chroma]:
+    """Get or create the global in-memory vector store."""
+    global _vector_store
+    return _vector_store
+
+
+def _set_vector_store(vs: Chroma):
+    """Set the global vector store."""
+    global _vector_store
+    _vector_store = vs
+
+
+def _clear_vector_store_instance():
+    """Clear the global vector store instance."""
+    global _vector_store
+    _vector_store = None
 
 
 def create_vector_store(documents: List[Document]) -> Chroma:
-    """Create a new vector store from documents."""
+    """Create a new in-memory vector store from documents."""
+    import chromadb
+    
     embeddings = get_embeddings()
-    client = _get_chroma_client()
+    # Use EphemeralClient - no SQLite, no file locking!
+    client = chromadb.EphemeralClient()
     
     vector_store = Chroma.from_documents(
         documents=documents,
         embedding=embeddings,
         client=client,
-        collection_name="rag_documents"
+        collection_name=COLLECTION_NAME
     )
+    _set_vector_store(vector_store)
     return vector_store
 
 
 def load_vector_store() -> Optional[Chroma]:
-    """Load existing vector store if it exists."""
-    chroma_db_file = os.path.join(CHROMA_PERSIST_DIRECTORY, "chroma.sqlite3")
-    if os.path.exists(chroma_db_file):
-        embeddings = get_embeddings()
-        client = _get_chroma_client()
-        
-        # Check if collection exists
-        try:
-            collections = client.list_collections()
-            if any(c.name == "rag_documents" for c in collections):
-                return Chroma(
-                    client=client,
-                    collection_name="rag_documents",
-                    embedding_function=embeddings
-                )
-        except:
-            pass
-    return None
+    """Load existing in-memory vector store."""
+    vs = _get_vector_store()
+    if vs:
+        print(f"[DEBUG] Vector store has {vs._collection.count()} documents")
+    else:
+        print("[DEBUG] No vector store loaded")
+    return vs
 
 
 def add_documents_to_store(documents: List[Document], vector_store: Optional[Chroma] = None) -> Chroma:
     """Add documents to existing vector store or create new one."""
+    import chromadb
+    
     processed_docs = process_documents(documents)
-    
     embeddings = get_embeddings()
-    client = _get_chroma_client()
     
-    # Always use the same client instance
-    vector_store = Chroma(
-        client=client,
-        collection_name="rag_documents",
-        embedding_function=embeddings
-    )
+    # Get existing store or create new one
+    existing_store = _get_vector_store()
     
-    vector_store.add_documents(processed_docs)
-    return vector_store
+    if existing_store is not None:
+        # Add to existing store
+        print(f"[DEBUG] Adding {len(processed_docs)} docs to existing store")
+        existing_store.add_documents(processed_docs)
+        return existing_store
+    else:
+        # Create new in-memory store
+        print(f"[DEBUG] Creating NEW store with {len(processed_docs)} docs")
+        client = chromadb.EphemeralClient()
+        vector_store = Chroma.from_documents(
+            documents=processed_docs,
+            embedding=embeddings,
+            client=client,
+            collection_name=COLLECTION_NAME
+        )
+        _set_vector_store(vector_store)
+        return vector_store
 
 
 def ingest_file(file_path: str) -> Chroma:
@@ -185,44 +194,12 @@ def ingest_text(text: str, source_name: str = "user_input") -> Chroma:
 
 
 def clear_vector_store():
-    """Delete the vector store contents using ChromaDB's reset feature."""
-    import shutil
-    import time
-    
-    try:
-        # First, try to delete the collection via ChromaDB API
-        client = _get_chroma_client()
-        try:
-            client.delete_collection(COLLECTION_NAME)
-            print(f"Collection '{COLLECTION_NAME}' deleted via API.")
-        except Exception as e:
-            print(f"Collection delete via API failed (may not exist): {e}")
-    except Exception as e:
-        print(f"Could not get client for cleanup: {e}")
-    
-    # Give SQLite time to release locks
-    time.sleep(0.5)
-    
-    # Now completely remove and recreate the directory
-    if os.path.exists(CHROMA_PERSIST_DIRECTORY):
-        try:
-            shutil.rmtree(CHROMA_PERSIST_DIRECTORY)
-            print(f"Removed directory: {CHROMA_PERSIST_DIRECTORY}")
-        except Exception as e:
-            print(f"Error removing directory: {e}")
-    
-    # Wait a moment for filesystem
-    time.sleep(0.3)
-    
-    # Recreate clean directory
-    os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
-    
-    # Add anti-indexing files
-    for f in ['.metadata_never_index', '.noindex']:
-        filepath = os.path.join(CHROMA_PERSIST_DIRECTORY, f)
-        open(filepath, 'w').close()
-    
-    print("Vector store cleared and reset.")
+    """Clear the in-memory vector store."""
+    print("[DEBUG] Clearing vector store...")
+    _clear_vector_store_instance()
+    vs = _get_vector_store()
+    print(f"[DEBUG] After clear, vector store is: {vs}")
+    print("Vector store cleared.")
 
 
 if __name__ == "__main__":
