@@ -1,0 +1,82 @@
+# RAG Chatbot - Sample Knowledge Base
+
+## About This Company
+
+Welcome to TechCorp Inc., a leading software development company specializing in AI-powered solutions. Founded in 2020, we have grown to serve over 500 enterprise clients worldwide.
+
+## Our Products
+
+### 1. SmartAssist AI
+Our flagship product, SmartAssist AI, is an intelligent customer service platform that:
+- Handles 80% of customer inquiries automatically
+- Supports 25+ languages
+- Integrates with popular CRM systems
+- Provides real-time analytics and insights
+
+**Pricing:** Starting at $99/month for small businesses, with enterprise plans available.
+
+### 2. DataFlow Analytics
+A comprehensive data analytics platform featuring:
+- Real-time data processing
+- Custom dashboard creation
+- Predictive analytics capabilities
+- Export to multiple formats (CSV, Excel, PDF)
+
+**Pricing:** Free tier available, Pro plans start at $49/month.
+
+### 3. SecureVault
+Enterprise-grade security solution offering:
+- End-to-end encryption
+- Multi-factor authentication
+- Compliance with GDPR, HIPAA, SOC2
+- 24/7 threat monitoring
+
+**Pricing:** Contact sales for enterprise pricing.
+
+## Frequently Asked Questions
+
+### General Questions
+
+**Q: How do I get started with TechCorp products?**
+A: You can sign up for a free trial on our website. No credit card required for the first 14 days.
+
+**Q: Do you offer customer support?**
+A: Yes! We offer 24/7 email support for all customers. Phone and chat support are available for Pro and Enterprise plans.
+
+**Q: Can I cancel my subscription anytime?**
+A: Absolutely. You can cancel your subscription at any time from your account settings. No cancellation fees apply.
+
+### Technical Questions
+
+**Q: What integrations do you support?**
+A: We support integrations with:
+- Salesforce
+- HubSpot
+- Slack
+- Microsoft Teams
+- Zapier
+- And 50+ more via our API
+
+**Q: Is there an API available?**
+A: Yes, we provide a RESTful API with comprehensive documentation. API access is included in Pro and Enterprise plans.
+
+**Q: What are the system requirements?**
+A: Our products are cloud-based and work with any modern web browser. We recommend Chrome, Firefox, Safari, or Edge (latest versions).
+
+## Contact Information
+
+- **Email:** support@techcorp.example.com
+- **Phone:** 1-800-TECH-CORP (1-800-832-4267)
+- **Address:** 123 Innovation Drive, San Francisco, CA 94105
+- **Hours:** Monday-Friday, 9 AM - 6 PM PST
+
+## Company Policies
+
+### Refund Policy
+We offer a 30-day money-back guarantee on all plans. If you're not satisfied, contact our support team for a full refund.
+
+### Privacy Policy
+We take your privacy seriously. We never sell your data to third parties. All data is encrypted at rest and in transit.
+
+### Terms of Service
+By using our products, you agree to our terms of service. Users must be 18 years or older. Commercial use requires a business license.

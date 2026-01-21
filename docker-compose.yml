@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # Main application (Streamlit UI)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-chatbot-web
+    ports:
+      - "8501:8501"
+    environment:
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./data:/app/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks:
+      - rag-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # FastAPI backend
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-chatbot-api
+    command: ["uvicorn", "src.api:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - OLLAMA_BASE_URL=http://ollama:11434
+    volumes:
+      - ./chroma_db:/app/chroma_db
+      - ./data:/app/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks:
+      - rag-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama LLM service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rag-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - rag-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    # Uncomment for GPU support (NVIDIA)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # Model initialization (one-time setup)
+  ollama-init:
+    image: ollama/ollama:latest
+    container_name: rag-ollama-init
+    volumes:
+      - ollama_models:/root/.ollama
+    networks:
+      - rag-network
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Pulling Llama 3.2 model..."
+        ollama pull llama3.2
+        echo "Model ready!"
+    restart: "no"
+
+  # Prometheus for metrics (optional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: rag-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - rag-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana for dashboards (optional)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: rag-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - rag-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+networks:
+  rag-network:
+    driver: bridge
+
+volumes:
+  ollama_models:
+    name: rag-ollama-models
+  prometheus_data:
+    name: rag-prometheus-data
+  grafana_data:
+    name: rag-grafana-data
