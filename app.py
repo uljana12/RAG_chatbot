@@ -1,6 +1,19 @@
 """
 Streamlit Web UI for RAG Chatbot
-A user-friendly interface for interacting with the chatbot and managing documents.
+
+Interactive chat interface for the Copenhagen IT Job Search Assistant.
+Allows users to load data, ask questions, and manage the knowledge base.
+
+Features:
+- Load Copenhagen IT job listings (mock data)
+- Add content from URLs
+- Upload files (PDF, TXT, MD)
+- Chat with conversation history
+- Clear knowledge base
+- View source documents
+
+Run with: streamlit run app.py --server.headless true
+Access at: http://localhost:8501
 """
 
 import streamlit as st

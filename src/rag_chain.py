@@ -1,6 +1,18 @@
 """
 RAG Chain Module
-Implements the Retrieval-Augmented Generation chain using LangChain.
+
+Implements the Retrieval-Augmented Generation chain using LangChain and Ollama.
+Retrieves relevant documents from ChromaDB and generates responses using Llama 3.2.
+
+Key Components:
+- RAGChatbot: Main chatbot class with conversation history
+- get_retriever(): Creates similarity search retriever
+- create_rag_chain(): Builds the RAG pipeline
+
+Features:
+- Conversation memory (chat history)
+- Source deduplication in responses
+- Configurable temperature and retrieval count (k)
 """
 
 import os

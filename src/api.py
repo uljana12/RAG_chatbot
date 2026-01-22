@@ -1,6 +1,20 @@
 """
 FastAPI REST API for the RAG Chatbot
+
 Production-grade API with OpenAPI documentation, health checks, and metrics.
+Provides programmatic access to the RAG chatbot functionality.
+
+Endpoints:
+- POST /chat: Send a message and get AI response
+- POST /ingest/jobs: Load Copenhagen IT job listings
+- POST /ingest/text: Add custom text to knowledge base
+- POST /ingest/urls: Load content from URLs
+- DELETE /clear: Clear the knowledge base
+- GET /health: Health check endpoint
+- GET /metrics: Application metrics
+
+Run with: uvicorn src.api:app --reload --port 8000
+Docs at: http://localhost:8000/docs
 """
 
 import os

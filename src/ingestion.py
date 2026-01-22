@@ -1,6 +1,18 @@
 """
 Document Ingestion Module
-Handles loading, splitting, and storing documents in the vector database.
+
+Handles loading, splitting, and storing documents in an in-memory ChromaDB vector store.
+Uses Ollama embeddings (free, local) for generating document vectors.
+
+Key Functions:
+- ingest_text(): Add text content to the knowledge base
+- ingest_urls(): Load and process web pages
+- ingest_file(): Process PDF, TXT, or MD files
+- clear_vector_store(): Reset the in-memory store
+- load_vector_store(): Get the current vector store instance
+
+Note: Uses EphemeralClient (in-memory) to avoid SQLite locking issues on macOS.
+Data is not persisted between app restarts.
 """
 
 import os
@@ -132,12 +144,7 @@ def create_vector_store(documents: List[Document]) -> Chroma:
 
 def load_vector_store() -> Optional[Chroma]:
     """Load existing in-memory vector store."""
-    vs = _get_vector_store()
-    if vs:
-        print(f"[DEBUG] Vector store has {vs._collection.count()} documents")
-    else:
-        print("[DEBUG] No vector store loaded")
-    return vs
+    return _get_vector_store()
 
 
 def add_documents_to_store(documents: List[Document], vector_store: Optional[Chroma] = None) -> Chroma:
@@ -152,12 +159,10 @@ def add_documents_to_store(documents: List[Document], vector_store: Optional[Chr
     
     if existing_store is not None:
         # Add to existing store
-        print(f"[DEBUG] Adding {len(processed_docs)} docs to existing store")
         existing_store.add_documents(processed_docs)
         return existing_store
     else:
         # Create new in-memory store
-        print(f"[DEBUG] Creating NEW store with {len(processed_docs)} docs")
         client = chromadb.EphemeralClient()
         vector_store = Chroma.from_documents(
             documents=processed_docs,
@@ -195,11 +200,7 @@ def ingest_text(text: str, source_name: str = "user_input") -> Chroma:
 
 def clear_vector_store():
     """Clear the in-memory vector store."""
-    print("[DEBUG] Clearing vector store...")
     _clear_vector_store_instance()
-    vs = _get_vector_store()
-    print(f"[DEBUG] After clear, vector store is: {vs}")
-    print("Vector store cleared.")
 
 
 if __name__ == "__main__":
