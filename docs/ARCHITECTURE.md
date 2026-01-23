@@ -1,8 +1,15 @@
 # Architecture Documentation
 
-## C4 Model - System Architecture
+## Copenhagen IT Job Search Assistant - System Architecture
 
 This document provides comprehensive architecture documentation using the C4 model (Context, Containers, Components, Code).
+
+### Key Technologies
+- **LangChain**: `langchain_ollama`, `langchain_chroma`, `langchain_core`
+- **Vector Store**: ChromaDB with PersistentClient (singleton pattern)
+- **LLM**: Ollama with Llama 3.2 (local, free)
+- **Web UI**: Streamlit with Inter font, modern gradient styling
+- **API**: FastAPI with OpenAPI documentation
 
 ---
 
@@ -79,7 +86,7 @@ This document provides comprehensive architecture documentation using the C4 mod
 │  │      │    Vector Store     │         │    LLM Service      │              │   │
 │  │      │    [ChromaDB]       │         │    [Ollama]         │              │   │
 │  │      │                     │         │                     │              │   │
-│  │      │  In-memory storage  │         │  Local: Llama 3.2   │              │   │
+│  │      │  Persistent storage │         │  Local: Llama 3.2   │              │   │
 │  │      │  for embeddings     │         │  Free, no API key   │              │   │
 │  │      └─────────────────────┘         └─────────────────────┘              │   │
 │  │                                                                           │   │
@@ -90,11 +97,11 @@ This document provides comprehensive architecture documentation using the C4 mod
 ### Containers:
 | Container | Technology | Purpose | Port |
 |-----------|------------|---------|------|
-| Web UI | Streamlit | User interface for chat | 8501 |
-| REST API | FastAPI | Programmatic access | 8000 |
-| RAG Engine | Python/LangChain | Core AI logic | - |
-| Vector Store | ChromaDB | Embedding storage | - |
-| LLM Service | Ollama (Llama 3.2) | Text generation | 11434 |
+| Web UI | Streamlit | Modern chat interface with Inter font | 8501 |
+| REST API | FastAPI | Programmatic access with OpenAPI docs | 8000 |
+| RAG Engine | Python/LangChain | Core AI logic with conversation memory | - |
+| Vector Store | ChromaDB (Persistent) | Embedding storage with singleton client | - |
+| LLM Service | Ollama (Llama 3.2) | Text generation (free, local) | 11434 |
 
 ---
 
@@ -115,7 +122,7 @@ This document provides comprehensive architecture documentation using the C4 mod
 │   │  │  Loaders    │   │  Splitter   │   │  Generator  │   │   Store     │   │    │
 │   │  │             │   │             │   │             │   │             │   │    │
 │   │  │ • PDF       │   │ Recursive   │   │ Ollama      │   │ ChromaDB    │   │    │
-│   │  │ • Text      │   │ Char Split  │   │ Embeddings  │   │ In-memory   │   │    │
+│   │  │ • Text      │   │ Char Split  │   │ Embeddings  │   │ Persistent  │   │    │
 │   │  │ • Web       │   │ 1000/200    │   │             │   │             │   │    │
 │   │  │ • Jobs API  │   │             │   │             │   │             │   │    │
 │   │  └─────────────┘   └─────────────┘   └─────────────┘   └─────────────┘   │    │
@@ -381,13 +388,13 @@ Key Metrics:                                                               │
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| **LLM Framework** | LangChain | Industry standard, excellent abstractions, active community |
-| **Vector Store** | ChromaDB | Simple, embedded, good for PoC; Pinecone for production scale |
-| **LLM Backend** | Ollama + OpenAI | Flexibility: local for cost/privacy, cloud for scale |
-| **Web UI** | Streamlit | Rapid prototyping, good for demos; React for production |
-| **API** | FastAPI | High performance, automatic OpenAPI docs, async support |
-| **Container** | Docker | Industry standard, multi-stage builds for optimization |
-| **Orchestration** | Kubernetes | Enterprise standard, autoscaling, Azure AKS integration |
+| **LLM Framework** | LangChain (`langchain_ollama`, `langchain_chroma`) | Modern packages, no deprecation warnings |
+| **Vector Store** | ChromaDB PersistentClient | Singleton pattern avoids SQLite locking issues |
+| **LLM Backend** | Ollama (Llama 3.2) | Free, local, no API key required |
+| **Embeddings** | OllamaEmbeddings | Consistent with LLM, fully local |
+| **Web UI** | Streamlit + Inter font | Modern look, rapid prototyping |
+| **API** | FastAPI | High performance, automatic OpenAPI docs |
+| **Container** | Docker | Multi-stage builds for optimization |
 
 ---
 

@@ -5,12 +5,18 @@ Interactive chat interface for the Copenhagen IT Job Search Assistant.
 Allows users to load data, ask questions, and manage the knowledge base.
 
 Features:
-- Load Copenhagen IT job listings (mock data)
-- Add content from URLs
+- Load Copenhagen IT job listings (mock data from Danish tech companies)
+- Add content from URLs (web scraping)
 - Upload files (PDF, TXT, MD)
-- Chat with conversation history
-- Clear knowledge base
-- View source documents
+- Chat with conversation history (memory preserved)
+- Source deduplication in responses
+- Clear knowledge base functionality
+- View source documents used for answers
+
+UI Design:
+- Modern Inter font throughout
+- Blue-purple to grey gradient banner
+- Clean, professional styling
 
 Run with: streamlit run app.py --server.headless true
 Access at: http://localhost:8501
@@ -42,27 +48,81 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Custom CSS with consistent Inter font
 st.markdown("""
 <style>
-    .stChat message {
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* Consistent font across the entire app */
+    html, body, [class*="css"], h1, h2, h3, h4, h5, h6, p, span, div, label, button, input, textarea {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
     }
+    
+    /* Headers */
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 600;
+        letter-spacing: -0.02em;
+    }
+    
+    /* Code blocks keep monospace */
+    code, pre, .stCode {
+        font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace !important;
+        font-size: 0.9em;
+    }
+    
+    .stChatMessage {
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+    }
+    
     .main-header {
         text-align: center;
-        padding: 1rem;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        padding: 1.25rem 1rem;
+        background: linear-gradient(135deg, #5c6bc0 0%, #7e57c2 50%, #6b7280 100%);
         color: white;
-        border-radius: 10px;
-        margin-bottom: 2rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 12px rgba(92, 107, 192, 0.4);
     }
+    
+    .main-header h1 {
+        font-weight: 700;
+        font-size: 1.5rem;
+        letter-spacing: -0.02em;
+        margin: 0;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+    }
+    
     .sidebar-section {
-        background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 10px;
+        background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+        padding: 1.25rem;
+        border-radius: 12px;
         margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    /* Button styling */
+    .stButton > button {
+        font-weight: 600;
+        border-radius: 10px;
+        padding: 0.5rem 1.25rem;
+        transition: all 0.2s ease;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Radio buttons and inputs */
+    .stRadio label, .stTextInput label, .stTextArea label {
+        font-weight: 500;
+    }
+    
+    /* Success/warning/error messages */
+    .stAlert {
+        border-radius: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -156,19 +216,19 @@ def render_sidebar():
 
 def render_job_loader():
     """Render job search loader section."""
-    st.markdown("#### 🇩🇰 Copenhagen IT Jobs")
-    st.markdown("Load current IT & Software job listings from Copenhagen.")
+    st.markdown("**Sample Data**")
+    st.caption("Load IT job listings from Copenhagen")
     
-    if st.button("🔄 Load Copenhagen IT Jobs", use_container_width=True):
-        with st.spinner("Fetching job listings..."):
+    if st.button("Load Jobs", use_container_width=True):
+        with st.spinner("Loading..."):
             try:
                 jobs_text = get_copenhagen_it_jobs()
                 ingest_text(jobs_text, "copenhagen_it_jobs")
                 initialize_chatbot()
-                st.success("✅ Loaded 12 IT job listings from Copenhagen!")
+                st.success("12 jobs loaded")
                 st.rerun()
             except Exception as e:
-                st.error(f"Error loading jobs: {e}")
+                st.error(f"Error: {e}")
 
 
 def render_text_input():
@@ -261,7 +321,7 @@ def render_chat_interface():
     
     # Check if chatbot is ready
     if not st.session_state.vector_store_ready:
-        st.info("👈 Click **'Load Copenhagen IT Jobs'** in the sidebar to get started!")
+        st.info("👈 Click **'Load Jobs'** in the sidebar to get started!")
         
         # Show example
         with st.expander("📖 Quick Start Guide"):
@@ -269,8 +329,8 @@ def render_chat_interface():
             ### How to use this Job Search Assistant:
             
             1. **Load job data** using the sidebar:
-               - Click "Load Copenhagen IT Jobs" to get current listings
-               - Or add your own job descriptions
+               - Click "Load Jobs" to get sample listings
+               - Or add your own content via URL or text
             
             2. **Ask questions** like:
                - "What Python developer jobs are available?"

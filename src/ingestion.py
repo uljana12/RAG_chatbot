@@ -1,18 +1,21 @@
 """
 Document Ingestion Module
 
-Handles loading, splitting, and storing documents in an in-memory ChromaDB vector store.
-Uses Ollama embeddings (free, local) for generating document vectors.
+Handles loading, splitting, and storing documents in a persistent ChromaDB vector store.
+Uses Ollama embeddings (free, local) via langchain_ollama for generating document vectors.
 
 Key Functions:
 - ingest_text(): Add text content to the knowledge base
-- ingest_urls(): Load and process web pages
+- ingest_urls(): Load and process web pages  
 - ingest_file(): Process PDF, TXT, or MD files
-- clear_vector_store(): Reset the in-memory store
+- clear_vector_store(): Reset the persistent store (resets singleton client)
 - load_vector_store(): Get the current vector store instance
 
-Note: Uses EphemeralClient (in-memory) to avoid SQLite locking issues on macOS.
-Data is not persisted between app restarts.
+Technical Details:
+- Uses PersistentClient with singleton pattern to avoid SQLite locking
+- Data persists in ./chroma_db directory between app restarts
+- Imports: langchain_ollama.OllamaEmbeddings, langchain_chroma.Chroma
+- Chunk size: 1000 chars with 200 char overlap
 """
 
 import os
@@ -24,8 +27,8 @@ from langchain_community.document_loaders import (
     DirectoryLoader,
     WebBaseLoader,
 )
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_ollama import OllamaEmbeddings
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from dotenv import load_dotenv
 
@@ -103,34 +106,37 @@ def process_documents(documents: List[Document]) -> List[Document]:
     return text_splitter.split_documents(documents)
 
 
-# Global in-memory vector store (no SQLite = no locking issues)
-_vector_store = None
+# Global ChromaDB client (singleton to avoid SQLite locking)
+_chroma_client = None
 
-def _get_vector_store() -> Optional[Chroma]:
-    """Get or create the global in-memory vector store."""
-    global _vector_store
-    return _vector_store
+def _get_chroma_client():
+    """Get or create the persistent ChromaDB client."""
+    global _chroma_client
+    import chromadb
+    from chromadb.config import Settings
+    
+    if _chroma_client is None:
+        os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
+        _chroma_client = chromadb.PersistentClient(
+            path=CHROMA_PERSIST_DIRECTORY,
+            settings=Settings(
+                anonymized_telemetry=False,
+                allow_reset=True
+            )
+        )
+    return _chroma_client
 
 
-def _set_vector_store(vs: Chroma):
-    """Set the global vector store."""
-    global _vector_store
-    _vector_store = vs
-
-
-def _clear_vector_store_instance():
-    """Clear the global vector store instance."""
-    global _vector_store
-    _vector_store = None
+def _reset_chroma_client():
+    """Reset the ChromaDB client (for clearing)."""
+    global _chroma_client
+    _chroma_client = None
 
 
 def create_vector_store(documents: List[Document]) -> Chroma:
-    """Create a new in-memory vector store from documents."""
-    import chromadb
-    
+    """Create a new persistent vector store from documents."""
     embeddings = get_embeddings()
-    # Use EphemeralClient - no SQLite, no file locking!
-    client = chromadb.EphemeralClient()
+    client = _get_chroma_client()
     
     vector_store = Chroma.from_documents(
         documents=documents,
@@ -138,39 +144,58 @@ def create_vector_store(documents: List[Document]) -> Chroma:
         client=client,
         collection_name=COLLECTION_NAME
     )
-    _set_vector_store(vector_store)
     return vector_store
 
 
 def load_vector_store() -> Optional[Chroma]:
-    """Load existing in-memory vector store."""
-    return _get_vector_store()
+    """Load existing persistent vector store."""
+    chroma_db_file = os.path.join(CHROMA_PERSIST_DIRECTORY, "chroma.sqlite3")
+    if os.path.exists(chroma_db_file):
+        embeddings = get_embeddings()
+        client = _get_chroma_client()
+        try:
+            collections = client.list_collections()
+            if any(c.name == COLLECTION_NAME for c in collections):
+                return Chroma(
+                    client=client,
+                    collection_name=COLLECTION_NAME,
+                    embedding_function=embeddings
+                )
+        except:
+            pass
+    return None
 
 
 def add_documents_to_store(documents: List[Document], vector_store: Optional[Chroma] = None) -> Chroma:
     """Add documents to existing vector store or create new one."""
-    import chromadb
-    
     processed_docs = process_documents(documents)
     embeddings = get_embeddings()
+    client = _get_chroma_client()
     
-    # Get existing store or create new one
-    existing_store = _get_vector_store()
+    # Try to get existing collection or create new
+    try:
+        collections = client.list_collections()
+        collection_exists = any(c.name == COLLECTION_NAME for c in collections)
+    except:
+        collection_exists = False
     
-    if existing_store is not None:
+    if collection_exists:
         # Add to existing store
-        existing_store.add_documents(processed_docs)
-        return existing_store
+        vector_store = Chroma(
+            client=client,
+            collection_name=COLLECTION_NAME,
+            embedding_function=embeddings
+        )
+        vector_store.add_documents(processed_docs)
+        return vector_store
     else:
-        # Create new in-memory store
-        client = chromadb.EphemeralClient()
+        # Create new persistent store
         vector_store = Chroma.from_documents(
             documents=processed_docs,
             embedding=embeddings,
             client=client,
             collection_name=COLLECTION_NAME
         )
-        _set_vector_store(vector_store)
         return vector_store
 
 
@@ -199,8 +224,28 @@ def ingest_text(text: str, source_name: str = "user_input") -> Chroma:
 
 
 def clear_vector_store():
-    """Clear the in-memory vector store."""
-    _clear_vector_store_instance()
+    """Clear the persistent vector store."""
+    import shutil
+    import time
+    
+    # Reset client to release SQLite connections
+    _reset_chroma_client()
+    
+    # Wait for connections to close
+    time.sleep(0.5)
+    
+    # Remove the directory
+    if os.path.exists(CHROMA_PERSIST_DIRECTORY):
+        try:
+            shutil.rmtree(CHROMA_PERSIST_DIRECTORY)
+        except Exception as e:
+            print(f"Error removing directory: {e}")
+    
+    # Wait for filesystem
+    time.sleep(0.3)
+    
+    # Recreate empty directory
+    os.makedirs(CHROMA_PERSIST_DIRECTORY, exist_ok=True)
 
 
 if __name__ == "__main__":

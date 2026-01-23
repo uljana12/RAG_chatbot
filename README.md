@@ -1,18 +1,20 @@
-# Enterprise RAG Platform
+# Copenhagen IT Job Search Assistant
 
-A production-ready **Retrieval-Augmented Generation (RAG)** platform built with LangChain, demonstrating enterprise AI architecture patterns.
+A production-ready **Retrieval-Augmented Generation (RAG)** platform built with LangChain, helping job seekers find IT positions in Copenhagen, Denmark.
 
-> **Demo Use Case**: Copenhagen IT Job Search Assistant  
-> **Applicable to**: Customer service automation, internal knowledge bases, document Q&A
+> **Purpose**: AI-powered assistant for Copenhagen IT job search  
+> **Architecture**: Modern RAG pipeline with conversation memory  
+> **LLM**: Ollama with Llama 3.2 (free, runs locally)
 
 ## 🎯 Key Features
 
 | Feature | Technology | Description |
 |---------|------------|-------------|
-| **RAG Pipeline** | LangChain | Document ingestion, chunking, retrieval |
-| **Vector Store** | ChromaDB | In-memory similarity search |
+| **RAG Pipeline** | LangChain | Document ingestion, chunking, retrieval with source deduplication |
+| **Vector Store** | ChromaDB (Persistent) | Durable storage with singleton client pattern |
 | **LLM Backend** | Ollama (Llama 3.2) | Free local LLM, no API key needed |
-| **Web UI** | Streamlit | Interactive chat interface |
+| **Embeddings** | langchain_ollama | Local embeddings generation |
+| **Web UI** | Streamlit | Modern chat interface with Inter font |
 | **REST API** | FastAPI | Production API with OpenAPI docs |
 | **Containerization** | Docker Compose | One-command deployment |
 | **Observability** | Prometheus/Grafana | Metrics and monitoring |
@@ -29,10 +31,10 @@ LLM_Example/
 │
 ├── src/
 │   ├── __init__.py
-│   ├── ingestion.py           # Document processing pipeline
-│   ├── rag_chain.py           # RAG chain with LangChain
-│   ├── job_scraper.py         # Domain-specific data loader
-│   └── api.py                 # FastAPI REST endpoints
+│   ├── ingestion.py           # Document processing & ChromaDB storage
+│   ├── rag_chain.py           # RAG chain with conversation memory
+│   ├── job_scraper.py         # Copenhagen IT job listings (mock data)
+│   └── api.py                 # FastAPI REST API endpoints
 │
 ├── docs/
 │   └── ARCHITECTURE.md        # C4 diagrams & technical docs
@@ -79,7 +81,7 @@ cp .env.example .env
 
 Default configuration uses Ollama (free, local). No API key needed!
 
-> **Note**: The app uses in-memory ChromaDB storage. Data is cleared when the app restarts.
+> **Note**: Data is stored persistently in the `chroma_db/` folder.
 
 ### 5. Run the Application
 
@@ -190,19 +192,26 @@ curl http://localhost:8000/metrics
 ### Python SDK
 
 ```python
-from src.ingestion import ingest_text
+from src.ingestion import ingest_text, load_vector_store
 from src.rag_chain import RAGChatbot
+from src.job_scraper import get_copenhagen_it_jobs
 
-# Add some data
+# Load Copenhagen IT job listings
+job_data = get_copenhagen_it_jobs()
+ingest_text(job_data, "copenhagen_jobs")
+
+# Or add custom content
 ingest_text("Your custom content here...", "my_source")
 
-# Create chatbot instance
-chatbot = RAGChatbot()
+# Create chatbot instance with vector store
+vector_store = load_vector_store()
+chatbot = RAGChatbot(vector_store=vector_store)
 
-# Ask questions
-result = chatbot.chat("What is this about?", include_sources=True)
+# Ask questions (sources are automatically deduplicated)
+result = chatbot.chat("What Python jobs are available?", include_sources=True)
 print(result["answer"])
-print(result["sources"])
+for source in result["sources"]:
+    print(f"  - {source['source']}")
 ```
 
 ## 🐳 Docker Deployment

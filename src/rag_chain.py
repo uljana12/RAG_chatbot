@@ -6,23 +6,27 @@ Retrieves relevant documents from ChromaDB and generates responses using Llama 3
 
 Key Components:
 - RAGChatbot: Main chatbot class with conversation history
-- get_retriever(): Creates similarity search retriever
+- get_retriever(): Creates similarity search retriever  
 - create_rag_chain(): Builds the RAG pipeline
 
 Features:
-- Conversation memory (chat history)
-- Source deduplication in responses
+- Conversation memory (chat history preserved across messages)
+- Source deduplication in responses (no duplicate sources shown)
 - Configurable temperature and retrieval count (k)
+
+Imports:
+- langchain_ollama.ChatOllama (not langchain_community - avoids deprecation)
+- langchain_chroma.Chroma (not langchain_community - avoids deprecation)
 """
 
 import os
 from typing import List, Dict, Any, Optional
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langchain_core.runnables import RunnablePassthrough
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from dotenv import load_dotenv
 
 from src.ingestion import load_vector_store, get_embeddings, CHROMA_PERSIST_DIRECTORY

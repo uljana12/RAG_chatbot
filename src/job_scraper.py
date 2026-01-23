@@ -1,18 +1,23 @@
 """
 Job Scraper Module
 
-Provides IT job listings data for the RAG chatbot demo.
-Includes mock Copenhagen job data from top Danish tech companies.
+Provides IT job listings data for the Copenhagen Job Search Assistant.
+Includes comprehensive mock data from top Danish tech companies.
 
 Key Functions:
-- get_copenhagen_it_jobs(): Returns formatted job listings text
+- get_copenhagen_it_jobs(): Returns formatted job listings text for RAG ingestion
 - LinkedInJobScraper: Class for future LinkedIn integration (placeholder)
 
-Companies Featured:
+Companies Featured (Mock Data):
 - Novo Nordisk, Maersk, Spotify, LEGO, Microsoft
 - Danske Bank, Pleo, Unity, Trustpilot, Zendesk, Lunar, Too Good To Go
 
-Note: Currently uses mock data. Real scraping would require API access.
+Job Types:
+- Backend, Frontend, Full-Stack, DevOps, Data Science
+- Machine Learning, Cloud Engineering, Security
+
+Note: Uses mock data for demo purposes. Real scraping would require API access.
+Mock data includes realistic salaries in DKK, skills requirements, and job descriptions.
 """
 
 import requests
